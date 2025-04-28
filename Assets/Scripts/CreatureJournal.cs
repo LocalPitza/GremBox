@@ -18,6 +18,7 @@ public class CreatureJournal : MonoBehaviour
     public int maxColumns = 3;
     public float cellSpacing = 20f;
     public Vector2 cellSize = new Vector2(300, 150);
+    public ScrollRect scrollRect;
     
     [SerializeField] private List<JournalEntry> entries = new List<JournalEntry>();
 
@@ -31,6 +32,13 @@ public class CreatureJournal : MonoBehaviour
     {
         // Safely get or add GridLayoutGroup
         gridLayout = entryContainer.GetComponent<GridLayoutGroup>();
+        
+        // Set scroll content with proper RectTransform
+        if (scrollRect != null && entryContainer != null)
+        {
+            scrollRect.content = entryContainer.GetComponent<RectTransform>();
+        }
+
         if (gridLayout == null)
         {
             gridLayout = entryContainer.gameObject.AddComponent<GridLayoutGroup>();
@@ -79,7 +87,8 @@ public class CreatureJournal : MonoBehaviour
         if (gridLayout == null || entryContainer == null) yield break;
 
         // Calculate responsive cell size
-        float containerWidth = ((RectTransform)entryContainer).rect.width;
+        RectTransform containerRect = entryContainer.GetComponent<RectTransform>();
+        float containerWidth = containerRect.rect.width;
         float cellWidth = (containerWidth - (cellSpacing * (maxColumns-1))) / maxColumns;
         gridLayout.cellSize = new Vector2(cellWidth, cellSize.y);
 
@@ -94,10 +103,15 @@ public class CreatureJournal : MonoBehaviour
             
             yield return null;
         }
+                    
+        LayoutRebuilder.ForceRebuildLayoutImmediate(entryContainer.GetComponent<RectTransform>());
 
-        // Final layout pass
-        if (entryContainer != null)
-            LayoutRebuilder.ForceRebuildLayoutImmediate((RectTransform)entryContainer);
+        // Snap scroll to top after rebuild
+        if (scrollRect != null)
+        {
+            scrollRect.normalizedPosition = new Vector2(0, 1); // 1 = top
+        }
+        yield return null;
     }
 
     public void SellCreature(JournalEntry entry)
@@ -119,6 +133,7 @@ public class CreatureJournal : MonoBehaviour
             Debug.Log($"{entry.creatureName} - {(entry.linkedCreature != null ? "VALID" : "MISSING")}");
         }
     }
+
     public void RegisterCreature(GameObject creature)
     {
         StartCoroutine(RegisterCreatureWithDelay(creature, 0.1f));
@@ -143,8 +158,6 @@ public class CreatureJournal : MonoBehaviour
         {
             creatureName = nameGenerator.GenerateName(needs.personality),
             personality = needs.personality,
-            //incomeValue = EconomyManager.Instance.incomePerCreature * 
-            //GetPersonalityIncomeMultiplier(needs.personality),
             linkedCreature = creature,
             creatureIcon = renderer.sprite,
             isFavorite = false
@@ -153,5 +166,4 @@ public class CreatureJournal : MonoBehaviour
         entries.Add(newEntry);
         UpdateJournalUI();
     }
-
 }

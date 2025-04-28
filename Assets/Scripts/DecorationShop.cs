@@ -5,7 +5,6 @@ using TMPro;
 using UnityEngine.UI;
 using System.Linq;
 public class DecorationShop : MonoBehaviour
-public class DecorationShop : MonoBehaviour
 {
     [System.Serializable]
     public class DecorationItem
